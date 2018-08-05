@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="pure-min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="jquery-3.3.1.min.js"></script>
+    <script src="sjcl.js"></script>
+</head>
+<body>
+
+<h1 class="crypt__headline">Crypt UI</h1>
+<h2 class="crypt__password-entered crypt__password-entered--hidden">
+    Password entered
+    <button class="pure-button crypt__remove-password-button">x</button>
+</h2>
+
+<form class="pure-form pure-g crypt__password-input-form">
+    <div class="pure-u-1-24"></div>
+    <div class="pure-u-22-24">
+        <div class="pure-u-1">
+            <label>Password
+                <input type="password" class="pure-input-1" />
+            </label>
+        </div>
+        <div class="pure-u-1">
+            <button class="pure-button crypt__enter-password-button">enter</button>
+            <button class="pure-button
+                           pure-button-primary
+                           crypt__show-password-button">[s]</button>
+            <button class="pure-button
+                           pure-button-primary
+                           crypt__hide-password-button hidden">[h]</button>
+        </div>
+    </div>
+    <div class="pure-u-1-24"></div>
+</form>
+
+<form class="pure-form pure-g">
+    <div class="pure-u-1-24"></div>
+    <div class="pure-u-10-24">
+        <div class="pure-u-1">
+            <label>Encrypted
+                <textarea class="pure-input-1 crypt__encrypted-textarea"></textarea>
+                <input class="pure-input-1 crypt__encrypted-url"/>
+            </label>
+        </div>
+        <div class="pure-u-1">
+            <button class="pure-button crypt__decrypt-button">decrypt</button>
+            <button class="pure-button
+                           pure-button-primary
+                           crypt__copy-encrypted-button">[c]</button>
+            <button class="pure-button
+                           pure-button-primary
+                           crypt__copy-url-button">[u]</button>
+        </div>
+    </div>
+    <div class="pure-u-2-24"></div>
+    <div class="pure-u-10-24">
+        <div class="pure-u-1">
+            <label>Decrypted
+                <textarea class="pure-input-1
+                                 crypt__decrypted-textarea
+                                 crypt__decrypted-textarea--invisible-text"></textarea>
+            </label>
+        </div>
+        <div class="pure-u-1">
+            <button class="pure-button crypt__encrypt-button">encrypt</button>
+            <button class="pure-button crypt__show-encrypted-button">show</button>
+            <button class="pure-button crypt__hide-encrypted-button hidden">hide</button>
+            <button class="pure-button
+                           pure-button-primary
+                           crypt__copy-decrypted-button">[c]</button>
+        </div>
+    </div>
+    <div class="pure-u-1-24"></div>
+</form>
+
+<script>
+    CryptUI = {
+        password: undefined,
+        bindings: {
+            enterPasswordButton: $('.crypt__enter-password-button'),
+            showPasswordButton: $('.crypt__show-password-button'),
+            hidePasswordButton: $('.crypt__hide-password-button'),
+            passwordInput: $('.crypt__password-input-form input'),
+            passwordEnteredIndicator: $('.crypt__password-entered'),
+            removePasswordButton: $('.crypt__remove-password-button'),
+            decryptedTextArea: $('.crypt__decrypted-textarea'),
+            encryptedTextArea: $('.crypt__encrypted-textarea'),
+            encryptedUrl: $('.crypt__encrypted-url'),
+            encryptButton: $('.crypt__encrypt-button'),
+            decryptButton: $('.crypt__decrypt-button'),
+            copyEncryptedButton: $('.crypt__copy-encrypted-button'),
+            copyDecryptedButton: $('.crypt__copy-decrypted-button'),
+            copyUrlButton: $('.crypt__copy-url-button'),
+            showEncryptedButton: $('.crypt__show-encrypted-button'),
+            hideEncryptedButton: $('.crypt__hide-encrypted-button')
+        },
+        copyToClipboard: function(inputField, focusAfterElement) {
+          inputField.select();
+          document.execCommand('copy');
+          focusAfterElement.focus();
+        },
+        passwordIsEmpty: function() {
+          if (CryptUI.password == undefined) {
+            return true;
+          }
+
+          if (CryptUI.password == '') {
+            return true;
+          }
+
+          return false;
+        },
+        prefillFromUrl: function() {
+          const afterHashValue = window.location.hash.substr(1);
+          if (afterHashValue == '') {
+            return;
+          }
+
+          CryptUI.bindings.encryptedTextArea.val(decodeURIComponent(afterHashValue));
+        },
+        buildUrlFromEncrypted: function() {
+          const encryptedTextArea = CryptUI.bindings.encryptedTextArea;
+          const url = 'https://florianhansen.net/crypt-ui/#' + encodeURIComponent(
+            encryptedTextArea.val()
+          );
+
+          return url;
+        }
+    };
+
+    CryptUI.bindings.showEncryptedButton.click(function(event) {
+      event.preventDefault();
+
+      let decryptedTextArea = CryptUI.bindings.decryptedTextArea;
+      let showEncryptedButton = CryptUI.bindings.showEncryptedButton;
+      let hideEncryptedButton = CryptUI.bindings.hideEncryptedButton;
+
+      showEncryptedButton.addClass('hidden');
+      hideEncryptedButton.removeClass('hidden');
+      decryptedTextArea.removeClass('crypt__decrypted-textarea--invisible-text');
+    });
+
+    CryptUI.bindings.hideEncryptedButton.click(function(event) {
+      event.preventDefault();
+
+      let decryptedTextArea = CryptUI.bindings.decryptedTextArea;
+      let showEncryptedButton = CryptUI.bindings.showEncryptedButton;
+      let hideEncryptedButton = CryptUI.bindings.hideEncryptedButton;
+      hideEncryptedButton.addClass('hidden');
+      showEncryptedButton.removeClass('hidden');
+      decryptedTextArea.addClass('crypt__decrypted-textarea--invisible-text');
+    });
+
+    CryptUI.bindings.copyDecryptedButton.click(function(event) {
+      event.preventDefault();
+
+      let decryptedTextArea = CryptUI.bindings.decryptedTextArea;
+      CryptUI.copyToClipboard(decryptedTextArea, $(this));
+    })
+
+    CryptUI.bindings.copyEncryptedButton.click(function(event) {
+      event.preventDefault();
+
+      let encryptedTextArea = CryptUI.bindings.encryptedTextArea;
+      CryptUI.copyToClipboard(encryptedTextArea, $(this));
+    })
+
+    CryptUI.bindings.copyUrlButton.click(function(event) {
+      event.preventDefault();
+
+      const encryptedUrl = CryptUI.bindings.encryptedUrl;
+      CryptUI.copyToClipboard(encryptedUrl, $(this));
+    })
+
+    CryptUI.bindings.encryptButton.click(function(event) {
+      event.preventDefault();
+
+      let encryptedTextArea = CryptUI.bindings.encryptedTextArea;
+      let encryptedUrl = CryptUI.bindings.encryptedUrl;
+      let decryptedTextArea = CryptUI.bindings.decryptedTextArea;
+      let password = CryptUI.password;
+      let text = decryptedTextArea.val();
+
+      if (CryptUI.passwordIsEmpty()) {
+        encryptedTextArea.val('No password entered.');
+        return;
+      }
+
+      let encrypted = sjcl.encrypt(password, text, { ks: 256 })
+
+      encryptedTextArea.val(encrypted.replace(/,/g, ",\n"));
+      decryptedTextArea.val('');
+      encryptedUrl.val(CryptUI.buildUrlFromEncrypted());
+    });
+
+    CryptUI.bindings.decryptButton.click(function(event) {
+      event.preventDefault();
+
+      let encryptedTextArea = CryptUI.bindings.encryptedTextArea;
+      let decryptedTextArea = CryptUI.bindings.decryptedTextArea;
+      let password = CryptUI.password;
+      let encryptedText = encryptedTextArea.val();
+      let decryptedText = '';
+
+      if (CryptUI.passwordIsEmpty()) {
+        decryptedTextArea.val('No password entered.');
+        return;
+      }
+
+      try {
+        decryptedText = sjcl.decrypt(password, encryptedText);
+      } catch (e) {
+        decryptedText = 'Could not decrypt. Invalid password?';
+      }
+
+      decryptedTextArea.val(decryptedText);
+      encryptedTextArea.val('');
+    });
+
+    CryptUI.bindings.enterPasswordButton.click(function(event) {
+        event.preventDefault();
+
+        const passwordEnteredIndicator = CryptUI.bindings.passwordEnteredIndicator;
+        const passwordInput = CryptUI.bindings.passwordInput;
+
+        CryptUI.password = CryptUI.bindings.passwordInput.val();
+        passwordInput.val('');
+        passwordEnteredIndicator.removeClass('crypt__password-entered--hidden');
+    });
+
+    CryptUI.bindings.showPasswordButton.click(function(event) {
+      event.preventDefault();
+
+      const passwordInput = CryptUI.bindings.passwordInput;
+      const showPasswordButton = CryptUI.bindings.showPasswordButton;
+      const hidePasswordButton = CryptUI.bindings.hidePasswordButton;
+
+      showPasswordButton.addClass('hidden');
+      hidePasswordButton.removeClass('hidden');
+      passwordInput.attr('type', 'text');
+    });
+
+    CryptUI.bindings.hidePasswordButton.click(function(event) {
+      event.preventDefault();
+
+      const passwordInput = CryptUI.bindings.passwordInput;
+      const showPasswordButton = CryptUI.bindings.showPasswordButton;
+      const hidePasswordButton = CryptUI.bindings.hidePasswordButton;
+
+      hidePasswordButton.addClass('hidden');
+      showPasswordButton.removeClass('hidden');
+      passwordInput.attr('type', 'password');
+    });
+
+    CryptUI.bindings.removePasswordButton.click(function (event) {
+        event.preventDefault();
+
+        const encryptedTextArea = CryptUI.bindings.encryptedTextArea;
+        const decryptedTextArea = CryptUI.bindings.decryptedTextArea;
+        const passwordInput = CryptUI.bindings.passwordInput;
+        const encryptedUrl = CryptUI.bindings.encryptedUrl;
+
+        CryptUI.password = undefined;
+        encryptedTextArea.val('');
+        decryptedTextArea.val('');
+        passwordInput.val('');
+        encryptedUrl.val('');
+
+        CryptUI.bindings.passwordEnteredIndicator.addClass('crypt__password-entered--hidden');
+    });
+
+    CryptUI.prefillFromUrl();
+</script>
+
+</body>
+</html>

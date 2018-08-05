@@ -1,0 +1,40 @@
+.crypt__headline {
+    padding: 0;
+    margin-left: 1.75rem;
+    margin-top: 1.75rem;
+    margin-bottom: 0;
+}
+
+.crypt__password-entered {
+    color: darkgreen;
+    padding: 0;
+    margin-left: 1.75rem;
+    margin-top: 0;
+    margin-bottom: 2.25rem;
+}
+.crypt__password-entered--hidden {
+    visibility: hidden;
+}
+
+.crypt__password-input-form {
+    margin-bottom: 2em;
+}
+
+.crypt__remove-password-button {
+  padding: 0.2rem 0.7rem;
+}
+
+.crypt__encrypted-url {
+  font-family: monospace;
+}
+
+.crypt__encrypted-textarea,
+.crypt__decrypted-textarea {
+    height: 10em;
+    font-family: monospace;
+    color: #333333;
+}
+
+.crypt__decrypted-textarea--invisible-text {
+  color: #efefef;
+}
